@@ -382,6 +382,27 @@
     .mbtn-ok{background:var(--pink);color:#fff;}
 
 
+
+    /* add friend modal */
+    .fr-modal-overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,.8);
+      z-index:300;display:flex;align-items:center;justify-content:center;padding:24px;
+    }
+    .fr-modal-overlay.off{display:none;}
+    .fr-modal{
+      background:var(--s1);border:1.5px solid var(--border);
+      border-radius:20px;padding:28px 22px;max-width:300px;width:100%;text-align:center;
+    }
+    .fr-modal h3{
+      font-family:'Bebas Neue',sans-serif;font-size:28px;
+      letter-spacing:2px;color:var(--purple);margin-bottom:8px;
+    }
+    .fr-modal p{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+    .fr-modal-btns{display:flex;gap:8px;margin-top:16px;}
+    .fr-modal-btns button{
+      flex:1;border:none;border-radius:12px;padding:12px;
+      font-family:'DM Sans',sans-serif;font-size:14px;font-weight:800;cursor:pointer;
+    }
     /* add friend button */
     .add-fr-btn{
       display:flex;align-items:center;justify-content:center;gap:7px;
@@ -418,6 +439,20 @@
     <input class="s-input" id="name-input" type="text" placeholder="Ex: Ana" maxlength="20"/>
   </div>
   <button class="s-btn" onclick="doSetup()">Entrar 💪</button>
+</div>
+
+
+<!-- ADD FRIEND MODAL -->
+<div class="fr-modal-overlay off" id="fr-modal">
+  <div class="fr-modal">
+    <h3>Adicionar Amiga</h3>
+    <p>Digite o nome da sua parceira. Quando ela abrir o app, já vai aparecer o nome dela pra tocar!</p>
+    <input class="s-input" id="fr-name-input" type="text" placeholder="Ex: Bia" maxlength="20" style="width:100%;margin-bottom:4px;"/>
+    <div class="fr-modal-btns">
+      <button class="mbtn-c" onclick="closeFrModal()">Cancelar</button>
+      <button class="mbtn-ok" onclick="confirmAddFriend()" style="background:var(--purple);">Adicionar</button>
+    </div>
+  </div>
 </div>
 
 <!-- TOAST -->
@@ -718,18 +753,29 @@ function listenIndex() {
   }, ()=>{});
 }
 
-// Add friend manually (pre-register her name)
-window.addFriend = async () => {
-  const n = prompt('Nome da sua amiga:');
-  if (!n || !n.trim()) return;
-  const frName = n.trim();
+// Add friend modal
+window.addFriend = () => {
+  document.getElementById('fr-modal').classList.remove('off');
+  setTimeout(() => document.getElementById('fr-name-input').focus(), 100);
+};
+window.closeFrModal = () => {
+  document.getElementById('fr-modal').classList.add('off');
+  document.getElementById('fr-name-input').value = '';
+};
+window.confirmAddFriend = async () => {
+  const n = document.getElementById('fr-name-input').value.trim();
+  if (!n) return;
   try {
     const snap = await getDoc(indexRef());
     const idx  = snap.exists() ? snap.data() : {};
-    idx[norm(frName)] = frName;
+    idx[norm(n)] = n;
     await setDoc(indexRef(), idx);
-    showToast('✅ ' + frName + ' adicionada!');
-  } catch(e) { showToast('Erro ao adicionar'); }
+    closeFrModal();
+    showToast('✅ ' + n + ' adicionada!');
+  } catch(e) {
+    console.error(e);
+    showToast('Erro: ' + e.message);
+  }
 };
 
 // ── FIRESTORE LISTENERS ────────────────────────
