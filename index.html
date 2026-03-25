@@ -78,6 +78,33 @@
     }
     .s-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(46,234,140,.25);}
 
+    /* saved names */
+    .s-saved-title{
+      font-size:11px;font-weight:800;color:var(--muted);
+      text-transform:uppercase;letter-spacing:1.5px;
+      align-self:flex-start;max-width:340px;width:100%;
+    }
+    .s-names{display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px;}
+    .s-name-btn{
+      background:var(--s2);border:1.5px solid var(--border);
+      border-radius:14px;padding:14px 18px;
+      display:flex;align-items:center;justify-content:space-between;
+      cursor:pointer;transition:border-color .2s,transform .1s;
+      font-family:'DM Sans',sans-serif;width:100%;
+    }
+    .s-name-btn:hover{border-color:var(--green);transform:translateX(4px);}
+    .s-name-left{display:flex;align-items:center;gap:10px;}
+    .s-name-dot{width:9px;height:9px;border-radius:50%;background:var(--green);}
+    .s-name-text{font-size:16px;font-weight:800;color:var(--text);}
+    .s-name-arrow{font-size:18px;color:var(--green);}
+    .s-divider{
+      display:flex;align-items:center;gap:10px;width:100%;max-width:340px;
+      color:var(--muted);font-size:12px;font-weight:700;
+    }
+    .s-divider::before,.s-divider::after{
+      content:'';flex:1;height:1px;background:var(--border);
+    }
+
     /* ═══ LAYOUT ═══ */
     #app{position:relative;z-index:1;}
 
@@ -361,8 +388,13 @@
 <div id="setup">
   <div class="s-logo">MetaFit</div>
   <p class="s-sub">Treino & Dieta — Semana a semana</p>
+  <div id="saved-section" style="display:none;width:100%;max-width:340px;display:none;flex-direction:column;gap:10px;">
+    <div class="s-saved-title">Entrar como</div>
+    <div id="saved-list" class="s-names"></div>
+    <div class="s-divider">novo usuário</div>
+  </div>
   <div class="s-card">
-    <label>Qual é o seu nome?</label>
+    <label id="name-label">Qual é o seu nome?</label>
     <input class="s-input" id="name-input" type="text" placeholder="Ex: Ana" maxlength="20"/>
   </div>
   <button class="s-btn" onclick="doSetup()">Entrar 💪</button>
@@ -581,23 +613,7 @@ const indexRef  = () => doc(db,'metafit_users','__index__');
 const myDocRef  = () => doc(db,'metafit_users',meKey,'weeks',weekKey);
 const frDocRef  = (fk,wk) => doc(db,'metafit_users',fk,'weeks',wk);
 
-// ── SETUP ──────────────────────────────────────
-window.doSetup = async () => {
-  const v = document.getElementById('name-input').value.trim();
-  if (!v) return;
-  meDisplay = v; meKey = norm(v);
-  localStorage.setItem('mf_name', meDisplay);
-  document.getElementById('setup').classList.add('off');
-  await boot();
-};
-window.changeName = () => {
-  const n = prompt('Alterar nome:', meDisplay);
-  if (n?.trim()) {
-    meDisplay = n.trim(); meKey = norm(meDisplay);
-    localStorage.setItem('mf_name', meDisplay);
-    refreshNameUI();
-  }
-};
+// ── SETUP (overridden at bottom with saved-names logic) ──
 function refreshNameUI() {
   document.getElementById('me-label').textContent      = meDisplay;
   document.getElementById('sc-me-name').textContent    = meDisplay;
@@ -919,11 +935,64 @@ function set(id, val) {
 }
 
 // ── ENTRY ──────────────────────────────────────
+function loadSavedNames() {
+  return JSON.parse(localStorage.getItem('mf_known_names') || '[]');
+}
+function saveKnownName(name) {
+  const names = loadSavedNames();
+  if (!names.includes(name)) { names.push(name); localStorage.setItem('mf_known_names', JSON.stringify(names)); }
+}
+
+function renderSetup() {
+  const names = loadSavedNames();
+  const section = document.getElementById('saved-section');
+  const list    = document.getElementById('saved-list');
+  if (names.length > 0) {
+    section.style.display = 'flex';
+    list.innerHTML = '';
+    names.forEach(n => {
+      const btn = document.createElement('button');
+      btn.className = 's-name-btn';
+      btn.innerHTML = `<div class="s-name-left"><div class="s-name-dot"></div><span class="s-name-text">${n}</span></div><span class="s-name-arrow">→</span>`;
+      btn.onclick = () => { meDisplay = n; meKey = norm(n); localStorage.setItem('mf_name', n); document.getElementById('setup').classList.add('off'); boot(); };
+      list.appendChild(btn);
+    });
+    document.getElementById('name-label').textContent = 'Ou entre com outro nome';
+  }
+}
+
+// Save name on first setup
+const _origDoSetup = window.doSetup;
+window.doSetup = async () => {
+  const v = document.getElementById('name-input').value.trim();
+  if (!v) return;
+  saveKnownName(v);
+  meDisplay = v; meKey = norm(v);
+  localStorage.setItem('mf_name', meDisplay);
+  document.getElementById('setup').classList.add('off');
+  await boot();
+};
+
+// Also save on changeName
+const _origChangeName = window.changeName;
+window.changeName = () => {
+  const n = prompt('Alterar nome:', meDisplay);
+  if (n?.trim()) {
+    meDisplay = n.trim(); meKey = norm(meDisplay);
+    localStorage.setItem('mf_name', meDisplay);
+    saveKnownName(meDisplay);
+    refreshNameUI();
+  }
+};
+
 const saved = localStorage.getItem('mf_name');
 if (saved) {
   meDisplay = saved; meKey = norm(saved);
+  saveKnownName(saved);
   document.getElementById('setup').classList.add('off');
   boot();
+} else {
+  renderSetup();
 }
 document.getElementById('name-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') window.doSetup();
