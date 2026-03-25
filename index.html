@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MetaFit</title>
+  <meta name="theme-color" content="#080810"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #080810;
+      --s1:       #111120;
+      --s2:       #181828;
+      --s3:       #20202e;
+      --border:   #2c2c40;
+      --green:    #2eea8c;
+      --purple:   #9b7dff;
+      --pink:     #ff4d7d;
+      --yellow:   #ffd166;
+      --blue:     #4dc9ff;
+      --text:     #eeeef5;
+      --muted:    #5a5a78;
+      --muted2:   #3a3a55;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      font-family:'DM Sans',sans-serif;
+      background:var(--bg);color:var(--text);
+      min-height:100dvh;overflow-x:hidden;
+    }
+    /* grain */
+    body::after{
+      content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
+      background:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
+    }
+
+    /* ═══ SETUP ═══ */
+    #setup{
+      position:fixed;inset:0;z-index:500;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      background:var(--bg);padding:28px;gap:18px;
+    }
+    #setup.off{display:none;}
+    .s-logo{
+      font-family:'Bebas Neue',sans-serif;font-size:76px;letter-spacing:5px;line-height:1;
+      background:linear-gradient(140deg,var(--green) 0%,var(--purple) 100%);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .s-sub{color:var(--muted);font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;}
+    .s-card{
+      background:var(--s2);border:1.5px solid var(--border);
+      border-radius:20px;padding:22px;width:100%;max-width:340px;
+      display:flex;flex-direction:column;gap:10px;
+    }
+    .s-card label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;}
+    .s-input{
+      background:var(--bg);border:2px solid var(--border);border-radius:12px;
+      padding:13px 16px;color:var(--text);font-family:'DM Sans',sans-serif;
+      font-size:15px;font-weight:700;width:100%;outline:none;
+      transition:border-color .2s;
+    }
+    .s-input:focus{border-color:var(--green);}
+    .s-btn{
+      background:linear-gradient(135deg,var(--green),#1ec870);
+      color:#060610;border:none;border-radius:14px;
+      padding:14px;font-family:'DM Sans',sans-serif;
+      font-size:15px;font-weight:800;cursor:pointer;
+      width:100%;max-width:340px;
+      transition:transform .15s,box-shadow .2s;
+    }
+    .s-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(46,234,140,.25);}
+
+    /* ═══ LAYOUT ═══ */
+    #app{position:relative;z-index:1;}
+
+    /* header */
+    .hdr{
+      padding:20px 18px 0;
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .logo{
+      font-family:'Bebas Neue',sans-serif;font-size:46px;letter-spacing:4px;line-height:1;
+      background:linear-gradient(135deg,var(--green),var(--purple));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .me-pill{
+      display:flex;align-items:center;gap:7px;
+      background:var(--s2);border:1.5px solid var(--border);
+      border-radius:22px;padding:7px 13px;cursor:pointer;
+    }
+    .me-dot{width:8px;height:8px;border-radius:50%;background:var(--green);}
+    .me-name{font-size:13px;font-weight:700;color:var(--green);}
+    .me-hint{font-size:10px;color:var(--muted);}
+
+    /* tabs */
+    .tabs{
+      display:flex;gap:6px;margin:18px 18px 0;
+      background:var(--s1);border:1.5px solid var(--border);
+      border-radius:14px;padding:4px;
+    }
+    .tab{
+      flex:1;border:none;border-radius:10px;padding:10px;
+      font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;
+      cursor:pointer;background:transparent;color:var(--muted);
+      transition:background .2s,color .2s;letter-spacing:.3px;
+    }
+    .tab.on{background:var(--s3);color:var(--text);}
+
+    /* panels */
+    .panel{display:none;padding:16px 18px 80px;}
+    .panel.on{display:block;}
+
+    /* week strip */
+    .wk-strip{
+      text-align:center;font-size:11px;font-weight:700;
+      color:var(--muted);text-transform:uppercase;letter-spacing:2px;
+      margin-bottom:14px;
+    }
+
+    /* scores */
+    .scores{display:flex;gap:10px;margin-bottom:16px;}
+    .sc{
+      flex:1;background:var(--s1);border:1.5px solid var(--border);
+      border-radius:16px;padding:14px 12px;
+    }
+    .sc.me-sc{border-color:rgba(46,234,140,.3);}
+    .sc.fr-sc{border-color:rgba(155,125,255,.3);}
+    .sc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+    .sc-who{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;}
+    .me-sc .sc-who{color:var(--green);}
+    .fr-sc .sc-who{color:var(--purple);}
+    .sc-pct{font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:1;}
+    .me-sc .sc-pct{color:var(--green);}
+    .fr-sc .sc-pct{color:var(--purple);}
+    .sc-bar{height:5px;background:var(--s3);border-radius:99px;overflow:hidden;margin-bottom:6px;}
+    .sc-fill{height:100%;border-radius:99px;transition:width .5s ease;}
+    .me-sc .sc-fill{background:var(--green);}
+    .fr-sc .sc-fill{background:var(--purple);}
+    .sc-sub{font-size:10px;font-weight:600;color:var(--muted);}
+
+    /* legend */
+    .legend{
+      display:flex;justify-content:center;gap:14px;
+      margin-bottom:14px;
+    }
+    .lg{font-size:11px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:4px;}
+
+    /* table */
+    .tbl-hdr{
+      display:grid;grid-template-columns:50px 1fr 1fr;
+      gap:8px;padding:0 2px 8px;
+    }
+    .th{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;text-align:center;}
+    .th:first-child{text-align:left;}
+    .th-inner{display:flex;flex-direction:column;gap:3px;}
+    .th-who{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;text-align:center;}
+    .th-cats{display:flex;gap:5px;}
+    .th-cats span{flex:1;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;text-align:center;}
+
+    .day-row{
+      display:grid;grid-template-columns:50px 1fr 1fr;
+      gap:8px;margin-bottom:8px;align-items:stretch;
+    }
+
+    /* day pill */
+    .dpill{
+      background:var(--s1);border:1.5px solid var(--border);
+      border-radius:12px;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;padding:8px 4px;gap:2px;
+    }
+    .day-row.today .dpill{border-color:var(--yellow);}
+    .dabbr{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;line-height:1;}
+    .day-row.today .dabbr{color:var(--yellow);}
+    .dtodot{width:5px;height:5px;border-radius:50%;background:var(--yellow);}
+
+    /* weekend pill */
+    .day-row.weekend .dpill{opacity:.4;}
+    .day-row.weekend .pair-cell{opacity:.35;pointer-events:none;}
+    .rest-label{
+      font-size:8px;font-weight:700;color:var(--muted);
+      text-transform:uppercase;letter-spacing:.5px;margin-top:2px;
+    }
+
+    /* pair */
+    .pair-cell{display:flex;gap:5px;}
+    .ck{
+      flex:1;border:none;border-radius:11px;
+      padding:10px 4px;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+      background:var(--s2);border:1.5px solid var(--border);
+      cursor:pointer;transition:transform .1s;
+    }
+    .ck:active{transform:scale(.93);}
+    .ck.done{background:rgba(46,234,140,.1);border-color:rgba(46,234,140,.4);}
+    .ck.fail{background:rgba(255,77,125,.1);border-color:rgba(255,77,125,.35);}
+    .ck.locked{cursor:default;}
+    .ck-icon{font-size:20px;line-height:1;}
+    .ck-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);}
+    .ck.done .ck-lbl{color:var(--green);}
+    .ck.fail .ck-lbl{color:var(--pink);}
+
+    /* ═══ MONTHLY PANEL ═══ */
+    .month-hdr{
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:16px;
+    }
+    .month-title{
+      font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;
+      color:var(--text);
+    }
+    .month-nav{display:flex;gap:6px;}
+    .mnav{
+      background:var(--s2);border:1.5px solid var(--border);
+      border-radius:10px;padding:6px 12px;color:var(--muted);
+      font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;
+      cursor:pointer;transition:border-color .2s,color .2s;
+    }
+    .mnav:hover{border-color:var(--purple);color:var(--purple);}
+
+    /* ONG banner */
+    .ong-banner{
+      background:linear-gradient(135deg,rgba(255,77,125,.12),rgba(155,125,255,.12));
+      border:1.5px solid rgba(255,77,125,.3);
+      border-radius:16px;padding:16px;margin-bottom:16px;
+    }
+    .ong-top{
+      display:flex;align-items:center;gap:8px;margin-bottom:10px;
+    }
+    .ong-icon{font-size:22px;}
+    .ong-title{font-size:13px;font-weight:800;color:var(--pink);}
+    .ong-rule{font-size:11px;color:var(--muted);font-weight:600;}
+    .ong-totals{display:flex;gap:10px;}
+    .ong-card{
+      flex:1;background:var(--s1);border:1.5px solid var(--border);
+      border-radius:12px;padding:12px 10px;text-align:center;
+    }
+    .ong-val{
+      font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1;
+      color:var(--pink);margin-bottom:3px;
+    }
+    .ong-who{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+    .ong-x{font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;}
+
+    /* week accordion */
+    .wk-block{
+      background:var(--s1);border:1.5px solid var(--border);
+      border-radius:14px;margin-bottom:10px;overflow:hidden;
+    }
+    .wk-block-hdr{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:13px 14px;cursor:pointer;
+      transition:background .15s;
+    }
+    .wk-block-hdr:hover{background:var(--s2);}
+    .wk-range{font-size:13px;font-weight:700;color:var(--text);}
+    .wk-chips{display:flex;gap:6px;align-items:center;}
+    .chip{
+      border-radius:8px;padding:3px 8px;
+      font-size:11px;font-weight:700;
+    }
+    .chip-g{background:rgba(46,234,140,.12);color:var(--green);}
+    .chip-r{background:rgba(255,77,125,.12);color:var(--pink);}
+    .wk-arrow{font-size:12px;color:var(--muted);transition:transform .2s;}
+    .wk-block.open .wk-arrow{transform:rotate(180deg);}
+
+    .wk-body{
+      display:none;padding:0 14px 14px;
+    }
+    .wk-block.open .wk-body{display:block;}
+
+    .wk-user-row{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:8px 0;border-top:1px solid var(--border);
+    }
+    .wku-name{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;}
+    .wku-stats{display:flex;gap:10px;align-items:center;}
+    .wku-stat{font-size:12px;font-weight:600;color:var(--muted);}
+    .wku-ong{
+      font-size:12px;font-weight:800;
+      background:rgba(255,77,125,.12);color:var(--pink);
+      border-radius:7px;padding:2px 8px;
+    }
+
+    /* monthly summary at bottom */
+    .summary-card{
+      background:var(--s2);border:1.5px solid var(--border);
+      border-radius:16px;padding:16px;margin-top:10px;
+    }
+    .summary-title{
+      font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;
+      color:var(--muted);margin-bottom:12px;
+    }
+    .summary-grid{display:flex;gap:8px;}
+    .sg{flex:1;text-align:center;}
+    .sg-val{
+      font-family:'Bebas Neue',sans-serif;font-size:34px;line-height:1;
+      margin-bottom:3px;
+    }
+    .sg-lbl{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+
+    /* reset */
+    .rst-btn{
+      display:block;margin:20px auto 0;
+      background:none;border:1.5px solid var(--border);
+      border-radius:12px;padding:10px 24px;
+      color:var(--muted);font-family:'DM Sans',sans-serif;
+      font-size:12px;font-weight:700;cursor:pointer;
+      text-transform:uppercase;letter-spacing:1px;
+      transition:border-color .2s,color .2s;
+    }
+    .rst-btn:hover{border-color:var(--pink);color:var(--pink);}
+
+    /* ═══ TOAST ═══ */
+    .toast{
+      position:fixed;bottom:88px;left:50%;
+      transform:translateX(-50%) translateY(10px);
+      background:var(--s2);border:1.5px solid var(--green);
+      border-radius:12px;padding:9px 18px;
+      font-size:13px;font-weight:700;color:var(--green);
+      opacity:0;pointer-events:none;z-index:400;
+      transition:opacity .2s,transform .2s;white-space:nowrap;
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+    /* modal */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;
+      display:flex;align-items:center;justify-content:center;padding:24px;}
+    .overlay.off{display:none;}
+    .modal{background:var(--s1);border:1.5px solid var(--border);
+      border-radius:20px;padding:28px 22px;max-width:300px;width:100%;text-align:center;}
+    .modal h3{font-family:'Bebas Neue',sans-serif;font-size:30px;
+      letter-spacing:2px;color:var(--pink);margin-bottom:8px;}
+    .modal p{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.65;}
+    .modal-btns{display:flex;gap:8px;}
+    .modal-btns button{flex:1;border:none;border-radius:12px;padding:12px;
+      font-family:'DM Sans',sans-serif;font-size:14px;font-weight:800;cursor:pointer;}
+    .mbtn-c{background:var(--s2);color:var(--muted);border:1.5px solid var(--border)!important;}
+    .mbtn-ok{background:var(--pink);color:#fff;}
+
+    /* loading */
+    .loading{text-align:center;padding:40px;font-size:13px;font-weight:600;color:var(--muted);}
+
+    @media(min-width:480px){
+      .panel{padding:16px 24px 80px;}
+      .hdr{padding:22px 24px 0;}
+      .tabs{margin:18px 24px 0;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup">
+  <div class="s-logo">MetaFit</div>
+  <p class="s-sub">Treino & Dieta — Semana a semana</p>
+  <div class="s-card">
+    <label>Qual é o seu nome?</label>
+    <input class="s-input" id="name-input" type="text" placeholder="Ex: Ana" maxlength="20"/>
+  </div>
+  <button class="s-btn" onclick="doSetup()">Entrar 💪</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL -->
+<div class="overlay off" id="modal">
+  <div class="modal">
+    <h3>Resetar?</h3>
+    <p>Apaga <strong>todos os seus</strong> checks desta semana. A semana recomeça do zero.</p>
+    <div class="modal-btns">
+      <button class="mbtn-c" onclick="closeModal()">Cancelar</button>
+      <button class="mbtn-ok" onclick="confirmReset()">Resetar</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="hdr">
+    <div class="logo">MetaFit</div>
+    <div class="me-pill" onclick="changeName()">
+      <div class="me-dot"></div>
+      <span class="me-name" id="me-label">—</span>
+      <span class="me-hint">trocar</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" id="tab-week" onclick="showTab('week')">📅 Semana</button>
+    <button class="tab" id="tab-month" onclick="showTab('month')">📊 Resumo Mensal</button>
+  </div>
+
+  <!-- WEEK PANEL -->
+  <div class="panel on" id="panel-week">
+    <div class="wk-strip" id="wk-strip">—</div>
+
+    <div class="scores">
+      <div class="sc me-sc">
+        <div class="sc-top">
+          <span class="sc-who" id="sc-me-name">Você</span>
+          <span class="sc-pct" id="sc-me-pct">0%</span>
+        </div>
+        <div class="sc-bar"><div class="sc-fill" id="bar-me" style="width:0%"></div></div>
+        <div class="sc-sub" id="sc-me-sub">0 de 0</div>
+      </div>
+      <div class="sc fr-sc">
+        <div class="sc-top">
+          <span class="sc-who" id="sc-fr-name">Amiga</span>
+          <span class="sc-pct" id="sc-fr-pct">0%</span>
+        </div>
+        <div class="sc-bar"><div class="sc-fill" id="bar-fr" style="width:0%"></div></div>
+        <div class="sc-sub" id="sc-fr-sub">0 de 0</div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="lg">✅ Feito</div>
+      <div class="lg">❌ Não feito</div>
+      <div class="lg">⬜ Pendente</div>
+    </div>
+
+    <div class="tbl-hdr">
+      <div></div>
+      <div class="th-inner">
+        <div class="th-who" id="col-me" style="color:var(--green)">Você</div>
+        <div class="th-cats"><span>Dieta</span><span>Treino</span></div>
+      </div>
+      <div class="th-inner">
+        <div class="th-who" id="col-fr" style="color:var(--purple)">Amiga</div>
+        <div class="th-cats"><span>Dieta</span><span>Treino</span></div>
+      </div>
+    </div>
+
+    <div id="days-table"><div class="loading">Carregando...</div></div>
+
+    <button class="rst-btn" onclick="openModal()">⟳ Resetar minha semana</button>
+  </div>
+
+  <!-- MONTH PANEL -->
+  <div class="panel" id="panel-month">
+    <div class="month-hdr">
+      <div class="month-title" id="month-title">—</div>
+      <div class="month-nav">
+        <button class="mnav" onclick="changeMonth(-1)">‹</button>
+        <button class="mnav" onclick="changeMonth(1)">›</button>
+      </div>
+    </div>
+
+    <div class="ong-banner">
+      <div class="ong-top">
+        <span class="ong-icon">🤝</span>
+        <div>
+          <div class="ong-title">Meta da ONG</div>
+          <div class="ong-rule">Cada ❌ = R$ 2,00 para a ONG</div>
+        </div>
+      </div>
+      <div class="ong-totals">
+        <div class="ong-card">
+          <div class="ong-val" id="ong-me-val">R$ 0</div>
+          <div class="ong-who" id="ong-me-who">Você</div>
+          <div class="ong-x" id="ong-me-x">0 ❌</div>
+        </div>
+        <div class="ong-card">
+          <div class="ong-val" id="ong-fr-val">R$ 0</div>
+          <div class="ong-who" id="ong-fr-who">Amiga</div>
+          <div class="ong-x" id="ong-fr-x">0 ❌</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="month-weeks"><div class="loading">Carregando...</div></div>
+
+    <div class="summary-card" id="month-summary" style="display:none;">
+      <div class="summary-title">Total do mês</div>
+      <div class="summary-grid">
+        <div class="sg">
+          <div class="sg-val" id="sum-me-done" style="color:var(--green)">0</div>
+          <div class="sg-lbl" id="sum-me-who">Seus ✅</div>
+        </div>
+        <div class="sg">
+          <div class="sg-val" id="sum-me-fail" style="color:var(--pink)">0</div>
+          <div class="sg-lbl">Seus ❌</div>
+        </div>
+        <div class="sg">
+          <div class="sg-val" id="sum-fr-done" style="color:var(--purple)">0</div>
+          <div class="sg-lbl" id="sum-fr-who">❌ dela</div>
+        </div>
+        <div class="sg">
+          <div class="sg-val" id="sum-fr-fail" style="color:var(--pink)">0</div>
+          <div class="sg-lbl" id="sum-fr-lbl">Dela ❌</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, onSnapshot, setDoc, getDoc, collection, query, where, getDocs }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ════════════════════════════════════════════════
+//  🔥 COLE A CONFIGURAÇÃO DO SEU FIREBASE AQUI
+// ════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyB-rikqhsnKbrQ-XlWOdnCw-S8lch_kTLI",
+  authDomain:        "atelie-estudos.firebaseapp.com",
+  projectId:         "atelie-estudos",
+  storageBucket:     "atelie-estudos.firebasestorage.app",
+  messagingSenderId: "494720347993",
+  appId:             "1:494720347993:web:774a4858ccbe4ed3c92648"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+// ── CONSTANTS ──────────────────────────────────
+const DAYS = [
+  { key:'seg', abbr:'SEG', jsDay:1 },
+  { key:'ter', abbr:'TER', jsDay:2 },
+  { key:'qua', abbr:'QUA', jsDay:3 },
+  { key:'qui', abbr:'QUI', jsDay:4 },
+  { key:'sex', abbr:'SEX', jsDay:5 },
+  { key:'sab', abbr:'SAB', jsDay:6, weekend:true },
+  { key:'dom', abbr:'DOM', jsDay:0, weekend:true },
+];
+const CATS      = ['dieta','treino'];
+const CYCLE     = ['pending','done','fail'];
+const ICONS     = { pending:'⬜', done:'✅', fail:'❌' };
+const WORKDAYS  = DAYS.filter(d => !d.weekend);
+const TOTAL_WK  = WORKDAYS.length * CATS.length; // 10 per week
+
+// ── STATE ──────────────────────────────────────
+let meDisplay = '', meKey = '';
+let frDisplay = '', frKey = '';
+let weekKey   = '';
+let myData    = {}, frData = {};
+let unsubFr   = null;
+let viewMonth = null; // { year, month } for monthly panel
+
+// ── HELPERS ────────────────────────────────────
+const norm = s => s.toLowerCase().replace(/\s+/g,'_');
+function getMonday(d = new Date()) {
+  const dt = new Date(d);
+  const day = dt.getDay();
+  dt.setDate(dt.getDate() + (day === 0 ? -6 : 1 - day));
+  dt.setHours(0,0,0,0);
+  return dt;
+}
+function calcWeekKey(d = new Date()) {
+  const mon = getMonday(d);
+  const jan1 = new Date(mon.getFullYear(),0,1);
+  const wn = Math.ceil(((mon - jan1)/86400000 + jan1.getDay()+1)/7);
+  return `${mon.getFullYear()}-W${String(wn).padStart(2,'0')}`;
+}
+function weekRange(wk) {
+  const [y,w] = wk.split('-W').map(Number);
+  const jan1 = new Date(y,0,1);
+  const mon = new Date(jan1.getTime()+((w-1)*7-(jan1.getDay()||7)+1)*86400000);
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  const f = d=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+  return { str:`${f(mon)} – ${f(sun)}`, mon, sun };
+}
+function todayKey() {
+  return ['dom','seg','ter','qua','qui','sex','sab'][new Date().getDay()];
+}
+const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+// ── FIRESTORE REFS ─────────────────────────────
+const indexRef  = () => doc(db,'metafit_users','__index__');
+const myDocRef  = () => doc(db,'metafit_users',meKey,'weeks',weekKey);
+const frDocRef  = (fk,wk) => doc(db,'metafit_users',fk,'weeks',wk);
+
+// ── SETUP ──────────────────────────────────────
+window.doSetup = async () => {
+  const v = document.getElementById('name-input').value.trim();
+  if (!v) return;
+  meDisplay = v; meKey = norm(v);
+  localStorage.setItem('mf_name', meDisplay);
+  document.getElementById('setup').classList.add('off');
+  await boot();
+};
+window.changeName = () => {
+  const n = prompt('Alterar nome:', meDisplay);
+  if (n?.trim()) {
+    meDisplay = n.trim(); meKey = norm(meDisplay);
+    localStorage.setItem('mf_name', meDisplay);
+    refreshNameUI();
+  }
+};
+function refreshNameUI() {
+  document.getElementById('me-label').textContent      = meDisplay;
+  document.getElementById('sc-me-name').textContent    = meDisplay;
+  document.getElementById('col-me').textContent        = meDisplay;
+  document.getElementById('ong-me-who').textContent    = meDisplay;
+  document.getElementById('sum-me-who').textContent    = `${meDisplay} ✅`;
+}
+
+// ── BOOT ───────────────────────────────────────
+async function boot() {
+  weekKey = calcWeekKey();
+
+  // Auto reset on new week
+  const lw = localStorage.getItem('mf_lastweek');
+  if (lw && lw !== weekKey) { myData={}; await saveMyData(); }
+  localStorage.setItem('mf_lastweek', weekKey);
+
+  myData = JSON.parse(localStorage.getItem('mf_data')||'{}');
+  viewMonth = { year: new Date().getFullYear(), month: new Date().getMonth() };
+
+  refreshNameUI();
+  document.getElementById('wk-strip').textContent = `Semana de ${weekRange(weekKey).str}`;
+
+  await registerUser();
+  const friend = await findFriend();
+  if (friend) {
+    frDisplay = friend.display; frKey = friend.key;
+    document.getElementById('sc-fr-name').textContent = frDisplay;
+    document.getElementById('col-fr').textContent     = frDisplay;
+    document.getElementById('ong-fr-who').textContent = frDisplay;
+    document.getElementById('sum-fr-who').textContent = `${frDisplay} ✅`;
+    document.getElementById('sum-fr-lbl').textContent = `${frDisplay} ❌`;
+    listenFriend(frKey, weekKey);
+  } else {
+    ['sc-fr-name','col-fr','ong-fr-who'].forEach(id => {
+      document.getElementById(id).textContent = 'Aguardando...';
+    });
+  }
+
+  listenMyWeek();
+  renderTable();
+  updateScores();
+}
+
+// ── REGISTER / FIND ────────────────────────────
+async function registerUser() {
+  try {
+    const snap = await getDoc(indexRef());
+    const idx  = snap.exists() ? snap.data() : {};
+    idx[meKey] = meDisplay;
+    await setDoc(indexRef(), idx);
+  } catch(e){}
+}
+async function findFriend() {
+  try {
+    const snap = await getDoc(indexRef());
+    if (!snap.exists()) return null;
+    const idx  = snap.data();
+    const keys = Object.keys(idx).filter(k => k !== meKey);
+    if (!keys.length) return null;
+    return { key: keys[0], display: idx[keys[0]] };
+  } catch(e){ return null; }
+}
+
+// ── FIRESTORE LISTENERS ────────────────────────
+function listenMyWeek() {
+  onSnapshot(myDocRef(), snap => {
+    if (snap.exists()) { myData = snap.data().checks||{}; }
+    renderTable(); updateScores();
+  }, ()=>{});
+}
+function listenFriend(fk, wk) {
+  if (unsubFr) unsubFr();
+  unsubFr = onSnapshot(frDocRef(fk,wk), snap => {
+    frData = snap.exists() ? snap.data().checks||{} : {};
+    updateFriendCells();
+    updateScores();
+  }, ()=>{});
+}
+
+// ── SAVE ───────────────────────────────────────
+async function saveMyData() {
+  localStorage.setItem('mf_data', JSON.stringify(myData));
+  try {
+    await setDoc(myDocRef(), { checks:myData, display:meDisplay, week:weekKey, updated:Date.now() }, {merge:true});
+  } catch(e){}
+}
+
+// ── TAB SWITCH ─────────────────────────────────
+window.showTab = tab => {
+  ['week','month'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('on', t===tab);
+    document.getElementById(`panel-${t}`).classList.toggle('on', t===tab);
+  });
+  if (tab === 'month') renderMonth();
+};
+
+// ── WEEK TABLE ─────────────────────────────────
+function renderTable() {
+  const today = todayKey();
+  const wrap  = document.getElementById('days-table');
+  wrap.innerHTML = '';
+
+  DAYS.forEach(({ key, abbr, weekend }) => {
+    const row = document.createElement('div');
+    row.className = `day-row${key===today?' today':''}${weekend?' weekend':''}`;
+
+    // Day pill
+    const pill = document.createElement('div');
+    pill.className = 'dpill';
+    pill.innerHTML = `<span class="dabbr">${abbr}</span>
+      ${key===today ? '<div class="dtodot"></div>' : ''}
+      ${weekend ? '<span class="rest-label">Descanso</span>' : ''}`;
+    row.appendChild(pill);
+
+    // My pair
+    const myP = makePair(key, myData, false, weekend);
+    row.appendChild(myP);
+
+    // Friend pair (locked)
+    const frP = makePair(key, frData, true, weekend);
+    row.appendChild(frP);
+
+    wrap.appendChild(row);
+  });
+}
+
+function makePair(dayKey, data, locked, weekend) {
+  const pair = document.createElement('div');
+  pair.className = `pair-cell${locked?' friend':''}`;
+  CATS.forEach(cat => {
+    const ck    = `${dayKey}_${cat}`;
+    const state = weekend ? 'pending' : (data[ck]||'pending');
+    const btn   = document.createElement('button');
+    btn.className = `ck ${state}${locked?' locked':''}${weekend?' locked':''}`;
+    btn.id = `${locked?'fr':'me'}-${ck}`;
+    btn.innerHTML = `<span class="ck-icon">${ICONS[state]}</span>
+      <span class="ck-lbl">${cat==='dieta'?'Dieta':'Treino'}</span>`;
+    if (!locked && !weekend) btn.onclick = () => cycleMe(ck);
+    pair.appendChild(btn);
+  });
+  return pair;
+}
+
+function updateFriendCells() {
+  DAYS.filter(d=>!d.weekend).forEach(({ key }) => {
+    CATS.forEach(cat => {
+      const ck  = `${key}_${cat}`;
+      const btn = document.getElementById(`fr-${ck}`);
+      if (!btn) return;
+      const st  = frData[ck]||'pending';
+      btn.className = `ck ${st} locked`;
+      btn.querySelector('.ck-icon').textContent = ICONS[st];
+      btn.querySelector('.ck-lbl').className    = 'ck-lbl';
+    });
+  });
+}
+
+// ── CYCLE ──────────────────────────────────────
+async function cycleMe(ck) {
+  const cur  = myData[ck]||'pending';
+  const next = CYCLE[(CYCLE.indexOf(cur)+1)%CYCLE.length];
+  myData[ck] = next;
+  const btn  = document.getElementById(`me-${ck}`);
+  if (btn) {
+    btn.className = `ck ${next}`;
+    btn.querySelector('.ck-icon').textContent = ICONS[next];
+  }
+  updateScores();
+  await saveMyData();
+  showToast(next==='done'?'✅ Isso aí!':next==='fail'?'❌ Marcado — vale R$2 pra ONG':'⬜ Desmarcado');
+}
+
+// ── SCORES ─────────────────────────────────────
+function cntDone(d){ return WORKDAYS.flatMap(({key})=>CATS.map(c=>`${key}_${c}`)).filter(k=>d[k]==='done').length; }
+
+function updateScores() {
+  const md = cntDone(myData), fd = cntDone(frData);
+  const mp = TOTAL_WK ? Math.round(md/TOTAL_WK*100) : 0;
+  const fp = TOTAL_WK ? Math.round(fd/TOTAL_WK*100) : 0;
+  set('sc-me-pct', mp+'%'); set('sc-fr-pct', fp+'%');
+  document.getElementById('bar-me').style.width = mp+'%';
+  document.getElementById('bar-fr').style.width = fp+'%';
+  set('sc-me-sub', `${md} de ${TOTAL_WK}`);
+  set('sc-fr-sub', `${fd} de ${TOTAL_WK}`);
+}
+
+// ── MONTHLY ────────────────────────────────────
+window.changeMonth = dir => {
+  let { year, month } = viewMonth;
+  month += dir;
+  if (month < 0)  { month = 11; year--; }
+  if (month > 11) { month = 0;  year++; }
+  viewMonth = { year, month };
+  renderMonth();
+};
+
+async function renderMonth() {
+  const { year, month } = viewMonth;
+  document.getElementById('month-title').textContent = `${MONTHS_PT[month]} ${year}`;
+
+  const weeks = getWeeksOfMonth(year, month);
+  const wrap  = document.getElementById('month-weeks');
+  wrap.innerHTML = '<div class="loading">Carregando semanas...</div>';
+
+  // Fetch all week data for both users
+  const allMe = {}, allFr = {};
+  await Promise.all(weeks.map(async wk => {
+    try {
+      const ms = await getDoc(doc(db,'metafit_users',meKey,'weeks',wk));
+      allMe[wk] = ms.exists() ? (ms.data().checks||{}) : {};
+    } catch(e){ allMe[wk]={}; }
+    if (frKey) {
+      try {
+        const fs = await getDoc(doc(db,'metafit_users',frKey,'weeks',wk));
+        allFr[wk] = fs.exists() ? (fs.data().checks||{}) : {};
+      } catch(e){ allFr[wk]={}; }
+    }
+  }));
+
+  wrap.innerHTML = '';
+  let totMeDone=0, totMeFail=0, totFrDone=0, totFrFail=0;
+
+  weeks.forEach(wk => {
+    const { str } = weekRange(wk);
+    const mChecks = allMe[wk]||{};
+    const fChecks = allFr[wk]||{};
+
+    const mDone = WORKDAYS.flatMap(({key})=>CATS.map(c=>`${key}_${c}`)).filter(k=>mChecks[k]==='done').length;
+    const mFail = WORKDAYS.flatMap(({key})=>CATS.map(c=>`${key}_${c}`)).filter(k=>mChecks[k]==='fail').length;
+    const fDone = WORKDAYS.flatMap(({key})=>CATS.map(c=>`${key}_${c}`)).filter(k=>fChecks[k]==='done').length;
+    const fFail = WORKDAYS.flatMap(({key})=>CATS.map(c=>`${key}_${c}`)).filter(k=>fChecks[k]==='fail').length;
+
+    totMeDone+=mDone; totMeFail+=mFail; totFrDone+=fDone; totFrFail+=fFail;
+
+    const block = document.createElement('div');
+    block.className = 'wk-block';
+    block.innerHTML = `
+      <div class="wk-block-hdr" onclick="this.parentElement.classList.toggle('open')">
+        <span class="wk-range">${str}</span>
+        <div class="wk-chips">
+          <span class="chip chip-g">✅ ${mDone}</span>
+          <span class="chip chip-r">❌ ${mFail}</span>
+        </div>
+        <span class="wk-arrow">▾</span>
+      </div>
+      <div class="wk-body">
+        <div class="wk-user-row">
+          <span class="wku-name" style="color:var(--green)">${meDisplay}</span>
+          <div class="wku-stats">
+            <span class="wku-stat">✅ ${mDone} &nbsp; ❌ ${mFail}</span>
+            ${mFail>0?`<span class="wku-ong">R$ ${(mFail*2).toFixed(0)}</span>`:''}
+          </div>
+        </div>
+        ${frKey ? `<div class="wk-user-row">
+          <span class="wku-name" style="color:var(--purple)">${frDisplay}</span>
+          <div class="wku-stats">
+            <span class="wku-stat">✅ ${fDone} &nbsp; ❌ ${fFail}</span>
+            ${fFail>0?`<span class="wku-ong">R$ ${(fFail*2).toFixed(0)}</span>`:''}
+          </div>
+        </div>` : ''}
+      </div>`;
+    wrap.appendChild(block);
+  });
+
+  // ONG totals
+  set('ong-me-val', `R$ ${totMeFail*2}`);
+  set('ong-me-x',   `${totMeFail} ❌`);
+  set('ong-fr-val', `R$ ${totFrFail*2}`);
+  set('ong-fr-x',   `${totFrFail} ❌`);
+
+  // Summary
+  set('sum-me-done', totMeDone);
+  set('sum-me-fail', totMeFail);
+  set('sum-fr-done', totFrDone);
+  set('sum-fr-fail', totFrFail);
+  document.getElementById('month-summary').style.display = 'block';
+}
+
+// Returns week keys whose Monday falls in the given month
+function getWeeksOfMonth(year, month) {
+  const result = [];
+  // iterate each week Monday from start of month to end
+  const firstDay = new Date(year, month, 1);
+  const lastDay  = new Date(year, month+1, 0);
+  // start from Monday on or before firstDay
+  let d = getMonday(firstDay);
+  while (d <= lastDay) {
+    const wk = calcWeekKey(d);
+    if (!result.includes(wk)) result.push(wk);
+    d = new Date(d); d.setDate(d.getDate()+7);
+  }
+  return result;
+}
+
+// ── RESET ──────────────────────────────────────
+window.openModal   = () => document.getElementById('modal').classList.remove('off');
+window.closeModal  = () => document.getElementById('modal').classList.add('off');
+window.confirmReset = async () => {
+  myData = {};
+  await saveMyData();
+  renderTable(); updateScores();
+  closeModal();
+  showToast('⟳ Semana resetada!');
+};
+
+// ── TOAST ──────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('show'), 2300);
+}
+
+// ── UTIL ───────────────────────────────────────
+function set(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+// ── ENTRY ──────────────────────────────────────
+const saved = localStorage.getItem('mf_name');
+if (saved) {
+  meDisplay = saved; meKey = norm(saved);
+  document.getElementById('setup').classList.add('off');
+  boot();
+}
+document.getElementById('name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') window.doSetup();
+});
+</script>
+</body>
+</html>
