@@ -672,7 +672,7 @@ const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                    'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
 // ── FIRESTORE REFS ─────────────────────────────
-const indexRef  = () => doc(db,'metafit_users','__index__');
+const indexRef  = () => doc(db,'metafit_users','metafit_index');
 const myDocRef  = () => doc(db,'metafit_users',meKey,'weeks',weekKey);
 const frDocRef  = (fk,wk) => doc(db,'metafit_users',fk,'weeks',wk);
 
@@ -1048,7 +1048,7 @@ async function renderSetup() {
   const localNames = loadSavedNames();
   let allNames = [...localNames];
   try {
-    const snap = await getDoc(doc(db,'metafit_users','__index__'));
+    const snap = await getDoc(doc(db,'metafit_users','metafit_index'));
     if (snap.exists()) {
       Object.values(snap.data()).forEach(n => { if (!allNames.includes(n)) allNames.push(n); });
     }
