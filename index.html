@@ -464,14 +464,21 @@
         <div class="sc-bar"><div class="sc-fill" id="bar-me" style="width:0%"></div></div>
         <div class="sc-sub" id="sc-me-sub">0 de 0</div>
       </div>
-      <div class="sc fr-sc">
-        <div class="sc-top">
-          <span class="sc-who" id="sc-fr-name">Amiga</span>
-          <span class="sc-pct" id="sc-fr-pct">0%</span>
+      <div class="sc fr-sc" id="fr-sc-card">
+        <!-- waiting state -->
+        <div id="fr-waiting" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:4px 0;">
+          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Sua parceira</div>
+          <button class="add-fr-btn" id="add-fr-btn" onclick="addFriend()">+ Adicionar amiga</button>
         </div>
-        <div class="sc-bar"><div class="sc-fill" id="bar-fr" style="width:0%"></div></div>
-        <div class="sc-sub" id="sc-fr-sub">0 de 0</div>
-        <button class="add-fr-btn" id="add-fr-btn" onclick="addFriend()" style="display:none;">+ Adicionar amiga</button>
+        <!-- active state (hidden until friend joins) -->
+        <div id="fr-active" style="display:none;width:100%;">
+          <div class="sc-top">
+            <span class="sc-who" id="sc-fr-name" style="color:var(--purple)">—</span>
+            <span class="sc-pct" id="sc-fr-pct">0%</span>
+          </div>
+          <div class="sc-bar"><div class="sc-fill" id="bar-fr" style="width:0%"></div></div>
+          <div class="sc-sub" id="sc-fr-sub">0 de 10</div>
+        </div>
       </div>
     </div>
 
@@ -488,7 +495,7 @@
         <div class="th-cats"><span>Dieta</span><span>Treino</span></div>
       </div>
       <div class="th-inner">
-        <div class="th-who" id="col-fr" style="color:var(--purple)">Amiga</div>
+        <div class="th-who" id="col-fr" style="color:var(--purple)">—</div>
         <div class="th-cats"><span>Dieta</span><span>Treino</span></div>
       </div>
     </div>
@@ -681,23 +688,30 @@ function listenIndex() {
   onSnapshot(indexRef(), snap => {
     const idx  = snap.exists() ? snap.data() : {};
     const keys = Object.keys(idx).filter(k => k !== meKey);
-    const addBtn = document.getElementById('add-fr-btn');
     if (!keys.length) {
-      // No friend yet — show add button
-      if (addBtn) addBtn.style.display = 'flex';
+      // No friend yet
+      const w = document.getElementById('fr-waiting');
+      const a = document.getElementById('fr-active');
+      if (w) w.style.display = 'flex';
+      if (a) a.style.display = 'none';
       return;
     }
-    if (addBtn) addBtn.style.display = 'none';
     const newFrKey     = keys[0];
     const newFrDisplay = idx[keys[0]];
+    // Show active, hide waiting
+    const w = document.getElementById('fr-waiting');
+    const a = document.getElementById('fr-active');
+    if (w) w.style.display = 'none';
+    if (a) a.style.display = 'block';
+
     if (newFrKey !== frKey || newFrDisplay !== frDisplay) {
       frKey     = newFrKey;
       frDisplay = newFrDisplay;
-      document.getElementById('sc-fr-name').textContent = frDisplay;
-      document.getElementById('col-fr').textContent     = frDisplay;
-      document.getElementById('ong-fr-who').textContent = frDisplay;
-      document.getElementById('sum-fr-who').textContent = frDisplay + ' ✅';
-      document.getElementById('sum-fr-lbl').textContent = frDisplay + ' ❌';
+      set('sc-fr-name', frDisplay);
+      set('col-fr',     frDisplay);
+      set('ong-fr-who', frDisplay);
+      set('sum-fr-who', frDisplay + ' ✅');
+      set('sum-fr-lbl', frDisplay + ' ❌');
       listenFriend(frKey, weekKey);
       renderTable();
     }
