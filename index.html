@@ -1029,6 +1029,18 @@ function getWeeksOfMonth(year, month) {
 
 
 // ── COPY DAILY REPORT ──────────────────────────
+function doCopy(text) {
+  navigator.clipboard.writeText(text).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+}
+
 window.copyDailyReport = () => {
   const today = todayKey();
   const dayInfo = DAYS.find(d => d.key === today);
@@ -1036,41 +1048,14 @@ window.copyDailyReport = () => {
     showToast('📅 Hoje é dia de descanso!');
     return;
   }
-
   const DAYS_PT = { seg:'Segunda', ter:'Terça', qua:'Quarta', qui:'Quinta', sex:'Sexta' };
   const dayName = DAYS_PT[today] || today.toUpperCase();
-
-  const fmt = (data, name) => {
-    const dieta  = data[`${today}_dieta`]  || 'pending';
-    const treino = data[`${today}_treino`] || 'pending';
-    const ic = s => s === 'done' ? '[✅]' : s === 'fail' ? '[❌]' : '[ ]';
-    return `*${name}:*
-${ic(dieta)} Dieta  ${ic(treino)} Treino`;
-  };
-
-  const lines = [
-    `🏋️ *MetaFit — ${dayName}*`,
-    '',
-    fmt(myData, meDisplay),
-  ];
-  if (frDisplay && frKey) {
-    lines.push('');
-    lines.push(fmt(frData, frDisplay));
-  }
-
-  navigator.clipboard.writeText(lines.join('\n'))
-    .then(() => showToast('📋 Relatório copiado!'))
-    .catch(() => {
-      // fallback for iOS
-      const ta = document.createElement('textarea');
-      ta.value = lines.join('\n');
-      ta.style.position = 'fixed'; ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.focus(); ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      showToast('📋 Relatório copiado!');
-    });
+  const ic = s => s === 'done' ? '[✅]' : s === 'fail' ? '[❌]' : '[ ]';
+  const dieta  = myData[`${today}_dieta`]  || 'pending';
+  const treino = myData[`${today}_treino`] || 'pending';
+  const text = `🏋️ *MetaFit — ${dayName}*\n\n*${meDisplay}:*\n${ic(dieta)} Dieta  ${ic(treino)} Treino`;
+  doCopy(text);
+  showToast('📋 Seu relatório copiado!');
 };
 
 // ── RESET ──────────────────────────────────────
