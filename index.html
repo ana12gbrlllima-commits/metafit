@@ -478,6 +478,39 @@
       transition:border-color .2s,background .2s;
     }
     .pause-btn:hover{border-color:var(--yellow);background:rgba(255,209,102,.08);}
+
+    /* meals per day */
+    .meal-row{
+      padding:0 10px 10px;display:flex;flex-direction:column;gap:6px;
+    }
+    .meal-toggle-btn{
+      background:none;border:none;
+      color:var(--muted);font-family:'DM Sans',sans-serif;
+      font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;
+      cursor:pointer;text-align:left;padding:2px 6px;
+      display:flex;align-items:center;gap:5px;
+    }
+    .meal-toggle-btn span{transition:transform .2s;}
+    .meal-toggle-btn.open span{transform:rotate(90deg);}
+    .meal-btns{display:flex;gap:5px;flex-wrap:wrap;}
+    .meal-btn{
+      flex:1;min-width:60px;border:none;border-radius:10px;padding:7px 4px;
+      background:var(--s2);border:1.5px solid var(--border);
+      color:var(--muted);font-family:'DM Sans',sans-serif;
+      font-size:9px;font-weight:800;cursor:pointer;
+      text-transform:uppercase;letter-spacing:.8px;text-align:center;
+      transition:background .15s,border-color .15s,color .15s;
+    }
+    .meal-btn.livre{
+      background:rgba(255,77,125,.12);border-color:rgba(255,77,125,.4);color:var(--pink);
+    }
+    .meal-btns-wrap{display:none;}
+    .meal-btns-wrap.open{display:flex;flex-direction:column;gap:5px;}
+    .meal-ong-line{
+      font-size:10px;font-weight:700;color:var(--pink);
+      padding:0 2px;display:none;
+    }
+    .meal-ong-line.show{display:block;}
     /* loading */
     .loading{text-align:center;padding:40px;font-size:13px;font-weight:600;color:var(--muted);}
 
@@ -928,7 +961,62 @@ function renderTable() {
     row.appendChild(frP);
 
     wrap.appendChild(row);
+
+    // Meal section (only for workdays)
+    if (!weekend) {
+      const mealSection = buildMealSection(key);
+      wrap.appendChild(mealSection);
+    }
   });
+}
+
+function buildMealSection(dayKey) {
+  const MEALS = [
+    { key:'cafe',   label:'☕ Café' },
+    { key:'almoco', label:'🍽 Almoço' },
+    { key:'lanche', label:'🥪 Lanche' },
+    { key:'janta',  label:'🌙 Janta' },
+  ];
+  const mealCount = MEALS.filter(m => myData[`${dayKey}_meal_${m.key}`] === 'livre').length;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'meal-row';
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.className = 'meal-toggle-btn';
+  toggleBtn.id = `meal-toggle-${dayKey}`;
+  toggleBtn.innerHTML = `<span>▶</span> Refeições livres${mealCount > 0 ? ` · ${mealCount}× R$ ${mealCount*2}` : ''}`;
+  toggleBtn.onclick = () => {
+    toggleBtn.classList.toggle('open');
+    document.getElementById(`meal-wrap-${dayKey}`).classList.toggle('open');
+  };
+  wrap.appendChild(toggleBtn);
+
+  const mealWrap = document.createElement('div');
+  mealWrap.className = 'meal-btns-wrap';
+  mealWrap.id = `meal-wrap-${dayKey}`;
+
+  const mealBtns = document.createElement('div');
+  mealBtns.className = 'meal-btns';
+  MEALS.forEach(({ key:mk, label }) => {
+    const ck    = `${dayKey}_meal_${mk}`;
+    const livre = myData[ck] === 'livre';
+    const btn   = document.createElement('button');
+    btn.className = `meal-btn${livre ? ' livre' : ''}`;
+    btn.id = `mb-${ck}`;
+    btn.innerHTML = label + (livre ? '<br><small>livre</small>' : '');
+    btn.onclick = () => toggleMeal(dayKey, ck);
+    mealBtns.appendChild(btn);
+  });
+  mealWrap.appendChild(mealBtns);
+
+  const ongLine = document.createElement('div');
+  ongLine.className = `meal-ong-line${mealCount > 0 ? ' show' : ''}`;
+  ongLine.id = `meal-ong-${dayKey}`;
+  if (mealCount > 0) ongLine.textContent = `🤝 ${mealCount} refeição(ões) livre(s) = R$ ${mealCount*2},00 p/ ONG`;
+  mealWrap.appendChild(ongLine);
+  wrap.appendChild(mealWrap);
+  return wrap;
 }
 
 function makePair(dayKey, data, locked, weekend) {
@@ -1218,6 +1306,58 @@ window.togglePause = () => {
   applyPauseUI();
   showToast(isPaused ? '⏸ Meta pausada' : '▶ Meta retomada!');
 };
+
+
+// ── MEALS ──────────────────────────────────────
+async function toggleMeal(dayKey, ck) {
+  const isLibre = myData[ck] === 'livre';
+  myData[ck] = isLibre ? 'ok' : 'livre';
+  await saveMyData();
+
+  // Update button
+  const MEALS = [
+    { key:'cafe',   label:'☕ Café' },
+    { key:'almoco', label:'🍽 Almoço' },
+    { key:'lanche', label:'🥪 Lanche' },
+    { key:'janta',  label:'🌙 Janta' },
+  ];
+  const mk   = ck.split('_meal_')[1];
+  const meal = MEALS.find(m => m.key === mk);
+  const btn  = document.getElementById(`mb-${ck}`);
+  const nowLibre = myData[ck] === 'livre';
+  if (btn) {
+    btn.className = `meal-btn${nowLibre ? ' livre' : ''}`;
+    btn.innerHTML = (meal?.label || mk) + (nowLibre ? '<br><small>livre</small>' : '');
+  }
+
+  // Update toggle label and ong line
+  const mealCount = MEALS.filter(m => myData[`${dayKey}_meal_${m.key}`] === 'livre').length;
+  const tgl = document.getElementById(`meal-toggle-${dayKey}`);
+  if (tgl) tgl.innerHTML = `<span>${tgl.querySelector('span').textContent}</span> Refeições livres${mealCount > 0 ? ` · ${mealCount}× R$ ${mealCount*2}` : ''}`;
+
+  const ongLine = document.getElementById(`meal-ong-${dayKey}`);
+  if (ongLine) {
+    ongLine.textContent = mealCount > 0 ? `🤝 ${mealCount} refeição(ões) livre(s) = R$ ${mealCount*2},00 p/ ONG` : '';
+    ongLine.className = `meal-ong-line${mealCount > 0 ? ' show' : ''}`;
+  }
+  updateMealOngTotal();
+}
+
+function countMyMealFails() {
+  return Object.entries(myData)
+    .filter(([k,v]) => k.includes('_meal_') && v === 'livre').length;
+}
+
+function updateMealOngTotal() {
+  const checks = WORKDAYS.flatMap(({key}) => ['dieta','treino'].map(c=>`${key}_${c}`))
+    .filter(k => myData[k] === 'fail').length;
+  const meals  = countMyMealFails();
+  const total  = (checks + meals) * 2;
+  const mealEl = document.getElementById('ong-me-val');
+  const mealX  = document.getElementById('ong-me-x');
+  if (mealEl) mealEl.textContent = `R$ ${total}`;
+  if (mealX)  mealX.textContent  = `${checks} ❌ treino/dieta + ${meals} 🍽 livres`;
+}
 
 // ── RESET ──────────────────────────────────────
 window.openModal   = () => document.getElementById('modal').classList.remove('off');
